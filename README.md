@@ -115,6 +115,7 @@ Pull requests are welcome. Enjoy!
 ### **INSERT INTO**: used to insert new records/rows in a table
 * `INSERT INTO` table_name (column1, column2) `VALUES` (value1, value2);
 * `INSERT INTO` table_name `VALUES` (value1, value2 …);
+* `INSERT INTO` table_name `VALUES` (`select` value1, value2 from Table);
 
 ### **UPDATE**: used to modify the existing records in a table
 * `UPDATE` table_name `SET` column1 = value1, column2 = value2 `WHERE` condition;
@@ -193,3 +194,126 @@ Pull requests are welcome. Enjoy!
    `column3` `datatype`, <br />
    `column4` `datatype`, <br />
    `);`
+
+# 8. Window function:
+
+Grand total:
+SELECT item, purchases, category, SUM(purchases)
+  OVER () AS total_purchases
+FROM Produce
+
+Subtotal
+
+SELECT item, purchases, category, SUM(purchases)
+  OVER (
+    PARTITION BY category
+    ORDER BY purchases
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+  ) AS total_purchases
+FROM Produce
+
+Cumulative sum
+ 
+ SELECT item, purchases, category, SUM(purchases)
+  OVER (
+    PARTITION BY category
+    ORDER BY purchases
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS total_purchases
+FROM Produce
+
+Moving average
+
+SELECT item, purchases, category, AVG(purchases)
+  OVER (
+    ORDER BY purchases
+    ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+  ) AS avg_purchases
+FROM Produce
+
+Compute the number of items within a range
+
+SELECT animal, population, category, COUNT(*)
+  OVER (
+    ORDER BY population
+    RANGE BETWEEN 1 PRECEDING AND 1 FOLLOWING
+  ) AS similar_population
+FROM Farm;
+
+Get the last value in a range
+
+SELECT item, purchases, category, LAST_VALUE(item)
+  OVER (
+    PARTITION BY category
+    ORDER BY purchases
+    ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+  ) AS most_popular
+FROM Produce
+
+Compute rank
+
+SELECT name, department, start_date,
+  RANK() OVER (PARTITION BY department ORDER BY start_date) AS rank
+FROM Employees
+
+Get the most popular item in each category
+
+SELECT item, purchases, category, LAST_VALUE(item)
+  OVER (
+    PARTITION BY category
+    ORDER BY purchases
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+  ) AS most_popular
+FROM Produce
+
+Use a named window in a window frame clause
+
+SELECT item, purchases, category, LAST_VALUE(item)
+  OVER (item_window) AS most_popular
+FROM Produce
+WINDOW item_window AS (
+  PARTITION BY category
+  ORDER BY purchases
+  ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
+  
+SELECT item, purchases, category, LAST_VALUE(item)
+  OVER (item_window) AS most_popular
+FROM Produce
+WINDOW
+  a AS (PARTITION BY category),
+  b AS (a ORDER BY purchases),
+  c AS (b ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING),
+  item_window AS (c)
+  
+ Qualify:
+ 
+ SELECT
+  item,
+  RANK() OVER (PARTITION BY category ORDER BY purchases DESC) as rank
+FROM Produce
+WHERE Produce.category = 'vegetable'
+QUALIFY rank <= 3
+
+SELECT item
+FROM Produce
+WHERE Produce.category = 'vegetable'
+QUALIFY RANK() OVER (PARTITION BY category ORDER BY purchases DESC) <= 3
+
+Offset
+
+SELECT *
+FROM UNNEST(ARRAY<STRING>['a', 'b', 'c', 'd', 'e']) AS letter
+ORDER BY letter ASC LIMIT 3 OFFSET 1 (skip a)
+    
+  Alias visibility
+    
+    BigQuery processes aliases in a FROM clause from left to right, and aliases are visible only to subsequent path expressions in a FROM clause.
+    
+ Select
+    
+ SELECT l.LOCATION[offset(0)].*
+ SELECT * EXCEPT (order_id)
+ SELECT * REPLACE ("widget" AS item_name) # widget is a field name of item_name
+ SELECT * REPLACE (quantity/2 AS quantity) # half quantity
+ 
+  
